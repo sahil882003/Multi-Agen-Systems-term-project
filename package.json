@@ -1,0 +1,16 @@
+{
+  "name": "warehouse-decentralized-submission",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Warehouse simulation with BFS, STL-guided search, route-timing ADMM and crossing-allocation ADMM",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node tools/server.mjs",
+    "build": "node tools/build-offline.mjs",
+    "benchmark": "node tools/current-four-benchmark.mjs",
+    "verify": "node tools/verify-export.mjs"
+  }
+}

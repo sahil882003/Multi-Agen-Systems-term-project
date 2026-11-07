@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="theme-color" content="#14242e" />
+    <title>Warehouse Lab · Multi-agent coordination</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <main>
+      <header>
+        <div class="breadcrumb">
+          WAREHOUSE COORDINATION
+        </div>
+        <div class="header-right">
+          <div class="run-badge" id="run-badge" role="status">● READY</div>
+          <button id="export" class="button subtle">↓ Export run</button>
+        </div>
+      </header>
+      <nav class="page-navigation" aria-label="Simulator pages">
+        <a id="simulation-link" href="#simulation">Simulation</a>
+        <a id="results-link" href="#results">Results &amp; logs</a>
+      </nav>
+      <section class="simulation-page" id="overview">
+        <div class="configuration">
+          <div>
+            <label for="seed">RANDOM SEED</label
+            ><input
+              id="seed"
+              type="number"
+              min="0"
+              max="4294967295"
+              value="7"
+            />
+          </div>
+          <div>
+            <label for="fleet-size">FLEET SIZE</label
+            ><select id="fleet-size">
+              <option value="5">5 robots</option>
+              <option value="10">10 robots</option>
+              <option value="20">20 robots</option>
+              <option value="30">30 robots · expanded warehouse</option>
+              <option value="50">50 robots · expanded warehouse</option>
+            </select>
+          </div>
+          <div>
+            <label for="orders-per-robot">ORDERS / ROBOT</label
+            ><select id="orders-per-robot">
+              <option value="1">1 order</option>
+              <option value="2" selected>2 orders</option>
+              <option value="3">3 orders</option>
+<option value="4">4 orders</option>
+<option value="5">5 orders</option>
+<option value="6">6 orders</option>
+<option value="7">7 orders</option>
+<option value="8">8 orders</option>
+<option value="9">9 orders</option>
+<option value="10">10 orders</option>
+<option value="11">11 orders</option>
+<option value="12">12 orders</option>
+<option value="13">13 orders</option>
+<option value="14">14 orders</option>
+<option value="15">15 orders</option>
+<option value="16">16 orders</option>
+<option value="17">17 orders</option>
+<option value="18">18 orders</option>
+<option value="19">19 orders</option>
+<option value="20">20 orders</option>
+<option value="21">21 orders</option>
+<option value="22">22 orders</option>
+<option value="23">23 orders</option>
+<option value="24">24 orders</option>
+<option value="25">25 orders</option>
+<option value="26">26 orders</option>
+<option value="27">27 orders</option>
+<option value="28">28 orders</option>
+<option value="29">29 orders</option>
+<option value="30">30 orders</option>
+            </select>
+          </div>
+          <div>
+            <label for="warehouse-layout">WAREHOUSE LAYOUT</label
+            ><select id="warehouse-layout">
+              <option value="standard" selected>Standard 22 × 16</option>
+              <option value="scaled">Scaled with fleet</option>
+<option value="fixed-large">Fixed large 54 × 22</option>
+            </select>
+          </div>
+          <div><label for="congestion">SHARED-RESOURCE DEMAND</label><select id="congestion"><option value="low">Low · 20% hotspot orders</option><option value="medium" selected>Medium · 40% hotspot orders</option><option value="high">High · 80% hotspot orders</option></select></div>
+          <div class="method-config">
+            <label>COORDINATION METHOD</label>
+            <div class="segmented" id="modes">
+              <button data-mode="baseline">1 · BFS baseline</button>
+              <button data-mode="guided-local" class="selected">2 · STL-guided search</button>
+              <button data-mode="incremental">3 · Route-timing ADMM</button>
+              <button data-mode="junction-assignment">4 · Crossing-allocation ADMM</button>
+            </div>
+            <div id="admm-settings" hidden>
+              <p class="panel-foot">Until convergence · fixed penalty ρ = <strong id="admm-fixed-rho">—</strong>. Live residuals and cancellation are shown below.</p>
+            </div>
+          </div>
+        </div>
+        <section class="panel admm-progress" id="admm-progress" hidden aria-label="Live ADMM progress">
+          <div class="panel-heading"><h2 id="admm-phase">ADMM ready</h2><button class="button subtle" id="cancel-planning" hidden>Cancel &amp; reset</button></div>
+          <div class="solver-live-values">
+            <span>Iteration<strong id="admm-iteration">—</strong></span><span>Planning wall time<strong id="admm-elapsed">0 s</strong></span>
+            <span>Max local primal<strong id="admm-primal">—</strong></span><span>Max local dual<strong id="admm-dual">—</strong></span>
+            <span>Constraint violation<strong id="admm-violation">—</strong></span><span>Locally ready<strong id="admm-ready">—</strong></span>
+          </div>
+          <p class="panel-foot" id="admm-progress-note" aria-live="polite">Robots wait for a converged and integer-checked schedule. All local tolerances: 0.001.</p>
+        </section>
+<div class="metrics">
+          <article>
+            <div class="metric-label">ORDERS DELIVERED <span>↗</span></div>
+            <div class="metric-value" id="metric-delivered">
+              0 <small>/ 10</small>
+            </div>
+            <div class="metric-caption" id="metric-delivered-sub">
+              10 orders in this run
+            </div>
+          </article>
+          <article>
+            <div class="metric-label">ON-TIME DELIVERIES <span>◷</span></div>
+            <div class="metric-value" id="metric-ontime">0</div>
+            <div class="metric-caption" id="metric-deadline">
+              10 obligations pending
+            </div>
+          </article>
+          <article>
+            <div class="metric-label">FLEET WAITING <span>↔</span></div>
+            <div class="metric-value" id="metric-wait">
+              0 <small>ticks</small>
+            </div>
+            <div class="metric-caption">Includes service & scheduled waits</div>
+          </article>
+          <article>
+            <div class="metric-label">COLLISION EVENTS <span>◇</span></div>
+            <div class="metric-value" id="metric-collision">0</div>
+            <div class="metric-caption" id="metric-safety">
+              Cell + swept-motion checks
+            </div>
+          </article>
+        </div>
+        <div class="workspace-grid">
+          <article class="map-panel panel">
+            <div class="panel-heading">
+              <div>
+                <span class="tiny-square"></span>
+                <h2>Warehouse floor</h2>
+                <span class="tag" id="map-size-tag">22 × 16 GRID</span>
+              </div>
+              <label class="toggle"
+                ><input type="checkbox" id="paths" checked /> Planned
+                paths</label
+              >
+            </div>
+            <div class="canvas-wrap">
+<canvas
+                id="warehouse"
+                aria-label="Animated warehouse with five robots, shelves, dispatch stations and charging docks"
+              ></canvas>
+<div class="map-key">
+                <span><i class="key-shelf"></i>Storage</span
+                ><span><i class="key-dispatch"></i>Dispatch</span
+                ><span><i class="key-charge"></i>Charging dock</span
+                ><span><i class="key-orders"></i>Pickup orders (count)</span>
+              </div>
+            </div>
+<div class="transport">
+              <div>
+                <button class="button primary" id="play">
+                  ▶ Start simulation</button
+                ><button
+                  class="icon-button"
+                  id="step"
+                  title="Advance one tick"
+                  aria-label="Advance one tick"
+                >
+                  ↦</button
+                ><button
+                  class="icon-button"
+                  id="reset"
+                  title="Reset run"
+                  aria-label="Reset run"
+                >
+                  ↺
+                </button>
+              </div>
+              <div class="speed">
+                <span>SPEED</span
+                ><input
+                  id="speed"
+                  type="range"
+                  min="1"
+                  max="20"
+                  value="5"
+                  aria-label="Simulation speed"
+                /><b id="speed-value">5×</b>
+              </div>
+              <div class="clock" title="One mission tick = one model second. Planning latency advances ticks; committed robots keep executing."><span>SIM TICK</span><b id="tick">000</b></div>
+            </div>
+            <div class="run-note" id="run-note">
+              Ready to launch. Choose a method and start the simulation.
+            </div>
+          </article>
+        </div>
+      </section>
+      <section class="simulation-page results-page" id="results-view" aria-label="Results and logs" hidden>
+        <div class="results-heading">
+          <div><h1>Results &amp; logs</h1><p id="results-context">Current simulation run</p></div>
+          <a class="button" href="#simulation">Back to simulation</a>
+        </div>
+<article class="panel specs-panel">
+              <div class="panel-heading">
+                <h2>STL monitor</h2>
+                <span class="tag">LIVE TRACE</span>
+              </div>
+              <div id="specs"></div>
+              <div class="panel-foot" id="stl-scope"></div>
+              <details class="stl-help"><summary>Explain STL results</summary>
+                <p><b>G</b> means always; <b>F</b> means eventually. <b>t</b> is the current simulation tick; <b>D</b> is each order's deadline.</p>
+                <p>Positive margin: satisfied. Zero margin: satisfied exactly at the limit. Negative margin: violated. Safety is sampled at ticks; swept collisions are checked separately.</p>
+                <p>Battery margin uses percentage points: 13.1% charge minus a 12% reserve is +1.1 points.</p>
+                <p>Deadline categories do not overlap: on time, delivered late, overdue undelivered, and pending. Total violations = late + overdue undelivered. Pending means not delivered and deadline not yet passed; it is not a success. Delivery exactly at D is on time.</p>
+                <p>Rejected is a planning outcome, separate from deadline status. Ending a run does not satisfy pending obligations. New violations are recorded once in the event log.</p>
+              </details>
+            </article>
+        <article class="panel benchmark-panel" aria-labelledby="benchmark-heading">
+          <div class="panel-heading"><h2 id="benchmark-heading">Benchmark summary</h2><span class="tag" id="benchmark-state">LIVE RUN AGGREGATES</span></div>
+          <div class="benchmark-grid">
+            <div><span>On-time delivery rate</span><strong id="benchmark-ontime">0.0%</strong><small id="benchmark-ontime-note">All generated orders</small></div>
+            <div><span>Orders delivered</span><strong id="benchmark-delivered">0 / 0</strong><small id="benchmark-outcomes">Rejected and incomplete included separately</small></div>
+            <div><span>Mean completion time</span><strong id="benchmark-mean">—</strong><small>Simulation ticks · delivered orders</small></div>
+            <div><span>Median completion time</span><strong id="benchmark-median">—</strong><small>Simulation ticks · delivered orders</small></div>
+            <div><span>P90 completion time</span><strong id="benchmark-p90">—</strong><small>Simulation ticks · delivered orders</small></div>
+            <div><span>Total mission waiting</span><strong id="benchmark-wait">0</strong><small id="benchmark-wait-note">Robot-ticks · excludes idle and charging</small></div>
+            <div><span>Throughput</span><strong id="benchmark-throughput">0.0</strong><small>Delivered orders / 100 simulation ticks</small></div>
+            <div><span>Total planning time</span><strong id="benchmark-planning">0.00 s</strong><small>Wall time · included in mission clock (1 tick = 1 s)</small></div>
+          </div>
+          <div class="panel-foot">Completion time = delivery tick − order creation tick. Timing averages use delivered orders only; read them alongside delivery rate and unfinished work. Waiting sums stationary mission ticks across robots: blocked movement, planned waits and pickup/delivery service. Scheduled waits may prevent congestion; they are not all observed blocking. Live results are provisional; compare methods using identical workloads and horizons. Run aggregates are included in Export run.</div>
+        </article>
+        <div class="queue-section">
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Mission queue</h2>
+              <span class="tag" id="order-range">ALL ORDERS</span>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>ORDER</th>
+                    <th>AGENT</th>
+                    <th>DELIVER TO</th>
+                    <th>DEADLINE TICK</th>
+                    <th>STATUS</th>
+                    <th>TIME LEFT / SLACK (TICKS)</th>
+                  </tr>
+                </thead>
+                <tbody id="orders"></tbody>
+              </table>
+            </div>
+            <div class="panel-foot queue-pages" id="queue-pages" hidden>
+              <button class="button subtle" id="orders-previous" aria-label="Previous orders">← Previous</button>
+              <span>50 orders per page · totals include every order</span>
+              <button class="button subtle" id="orders-next" aria-label="Next orders">Next →</button>
+            </div>
+          </article>
+
+        </div>
+        <article class="panel detailed-stl-panel" aria-labelledby="stl-log-heading">
+          <div class="panel-heading">
+            <h2 id="stl-log-heading">Detailed STL logs</h2>
+            <span class="tag" id="stl-log-range">EXECUTION HISTORY</span>
+          </div>
+          <div class="stl-log-toolbar">
+            <label for="stl-log-filter">Requirement</label>
+            <select id="stl-log-filter">
+              <option value="all">All requirements</option>
+              <option value="separation">Safe separation</option>
+              <option value="battery">Battery reserve</option>
+              <option value="deadline">Delivery deadlines</option>
+            </select>
+            <button class="button subtle" id="stl-log-latest">Latest tick</button>
+            <span id="stl-log-state">Open this page to inspect the recorded trace.</span>
+          </div>
+          <div class="table-scroll stl-log-scroll">
+            <table>
+              <thead><tr><th>TICK</th><th>REQUIREMENT / VERDICT</th><th>OBSERVED AT TICK</th><th>MARGIN AT TICK</th><th>HISTORY RESULT</th><th>EVIDENCE</th></tr></thead>
+              <tbody id="stl-log-rows"></tbody>
+            </table>
+          </div>
+          <div class="panel-foot queue-pages">
+            <button class="button subtle" id="stl-log-newer">← Newer records</button>
+            <span id="stl-log-page">Page 1</span>
+            <button class="button subtle" id="stl-log-older">Older records →</button>
+          </div>
+          <div class="panel-foot">One record per requirement per recorded tick, reconstructed from the complete execution trace. Safety and battery verdicts use the historical minimum through that tick; the current sample margin is shown separately. Deadline records use completion timestamps, not a numeric STL robustness. Swept-motion conflicts are checked separately. Browsing older records freezes the log window; Latest tick resumes live updates. Simulation continues when changing pages.</div>
+        </article>
+        <div class="lower-grid" id="diagnostics-row">
+          <article class="panel" id="convergence-panel">
+            <div class="panel-heading">
+              <h2>ADMM convergence</h2>
+              <span class="tag" id="solver-status">NOT RUN</span>
+            </div>
+            <canvas
+              id="residuals"
+              aria-label="ADMM primal and dual residual chart"
+            ></canvas>
+            <div id="solver-meta" class="panel-foot">
+              Decentralized ADMM: local updates and copied neighbor messages before movement.
+            </div>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <h2>Event log</h2>
+              <span class="tag">MOST RECENT FIRST</span>
+            </div>
+            <div id="events" class="event-log"></div>
+            <div class="panel-foot" id="event-retention"></div>
+          </article>
+        </div>
+      </section>
+      <footer>
+        WAREHOUSE LAB
+        <span>Simulation, formal monitoring & distributed coordination</span
+        ><span>MAS · 5-member course project</span>
+      </footer>
+    </main>
+    <div id="toast" role="status"></div>
+    <dialog id="export-dialog">
+      <div class="export-heading">
+        <h2 id="export-title">Export data</h2>
+        <button class="icon-button" id="close-export" aria-label="Close export">
+          ×
+        </button>
+      </div>
+      <p id="export-hint">
+        Your data is ready. Download the file or copy its contents.
+      </p>
+      <textarea
+        id="export-content"
+        readonly
+        aria-label="Exported data"
+      ></textarea>
+      <div class="export-actions">
+        <a id="download-export" class="button primary">↓ Download file</a
+        ><button id="copy-export" class="button">Copy contents</button>
+      </div>
+    </dialog>
+    <script type="module" src="src/main.js"></script>
+  </body>
+</html>
