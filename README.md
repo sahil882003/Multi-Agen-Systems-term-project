@@ -47,9 +47,3 @@ To validate a simulation export downloaded from the browser:
 ```sh
 npm run verify -- path/to/export.json
 ```
-
-## Scope and limitations
-
-STL monitoring records the execution of every method. STL-guided search uses obstacle-aware distance estimates, optimistic mission-energy and deadline bounds, and clearance costs. Both ADMM controllers use rho = 5 with convergence checks. Agent optimization state is local to robot endpoints, while order assignment, the simulation clock and physical movement safeguards are shared.
-
-The model uses a discrete grid, deterministic movement and reliable simulated messages. Waiting consumes no battery. Energy admission prevents infeasible missions. BFS recovery does not guarantee deadlock freedom. Search limits, finite traces and local coordination do not establish global optimality or general safety. Recorded collisions, interventions, rejected orders and incomplete missions must be considered alongside delivery rates.
